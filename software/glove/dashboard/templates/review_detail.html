@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Review · {{ session.session_id }}{% endblock %}
+
+{% block content %}
+<div class="review-scope">
+
+<header class="tr-header">
+  <div class="tr-header-left">
+    <div class="tr-breadcrumb">
+      <span class="tr-kbd-crumb">review</span>
+      <span class="tr-crumb-sep">/</span>
+      <span class="tr-queue-name">{{ queue }}</span>
+      {% if task %}<span class="tr-crumb-sep">/</span><span class="tr-queue-name">{{ task }}</span>{% endif %}
+    </div>
+    <h1 class="tr-session-id">{{ session.session_id }}</h1>
+    <div class="tr-session-meta">
+      <span class="tr-tag tr-tag-{{ session.verdict }}">{{ session.verdict }}</span>
+      {% if session.decision %}<span class="tr-tag tr-tag-decision-{{ session.decision }}">{{ session.decision }}</span>{% endif %}
+      <span class="tr-meta-sep">·</span>
+      <span>{{ session.task or "—" }}</span>
+      <span class="tr-meta-sep">·</span>
+      <span class="tr-mono">{{ "%.1f"|format(session.duration_s) }}s</span>
+      <span class="tr-meta-sep">·</span>
+      <span class="tr-mono">{{ session.created_at[:19] }}</span>
+      {% if session.parent_map %}
+      <span class="tr-meta-sep">·</span>
+      <span>map <a class="tr-link-inline tr-mono" href="/maps">{{ session.parent_map }}</a></span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="tr-header-right">
+    <div class="tr-position">
+      {% if position %}
+        <span class="tr-mono tr-position-num">{{ position }}</span><span class="tr-position-sep">/</span><span class="tr-mono tr-position-total">{{ total_in_queue }}</span>
+      {% endif %}
+    </div>
+    <div class="tr-summary">
+      <span class="tr-summary-item"><span class="tr-dot tr-dot-pass"></span>{{ counts.auto_pass }}</span>
+      <span class="tr-summary-item"><span class="tr-dot tr-dot-warn"></span>{{ counts.pending_review }}</span>
+      <span class="tr-summary-item"><span class="tr-dot tr-dot-fail"></span>{{ counts.auto_fail }}</span>
+      <span class="tr-summary-item tr-summary-total">{{ counts.included }} / {{ counts.total }} in manifest</span>
+    </div>
+    <div class="tr-queue-picker">
+      <a href="/review?queue=needs_review{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'needs_review' %}tr-pill-active{% endif %}">needs review</a>
+      <a href="/review?queue=auto_fail{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'auto_fail' %}tr-pill-active{% endif %}">auto fail</a>
+      <a href="/review?queue=auto_pass{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'auto_pass' %}tr-pill-active{% endif %}">auto pass</a>
+      <a href="/review?queue=decided{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'decided' %}tr-pill-active{% endif %}">decided</a>
+      <a href="/review?queue=all{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'all' %}tr-pill-active{% endif %}">all</a>
+    </div>
+  </div>
+</header>
+
+{% if session.quality and session.quality.reasons %}
+<section class="tr-reasons">
+  <span class="tr-reasons-label">why {{ session.verdict|replace('_', ' ') }}:</span>
+  <ul class="tr-reasons-list">
+    {% for r in session.quality.reasons %}<li class="tr-mono">{{ r }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<div class="tr-grid">
+
+  <section class="tr-panel tr-panel-video">
+    <div class="tr-panel-title">
+      frame <span class="tr-mono tr-frame-counter" id="tr-frame-counter">0 / {{ (panel.n_frames - 1) if panel else 0 }}</span>
+      <span class="tr-mono tr-frame-time" id="tr-frame-time"></span>
+      <span class="tr-mono tr-scrub-status" id="tr-scrub-status" hidden></span>
+    </div>
+    <div class="tr-frame-holder">
+      <img class="tr-frame-img" id="tr-frame-img" src="/review/{{ session.session_id }}/frame/0" alt="frame">
+    </div>
+    <input type="range" class="tr-frame-slider" id="tr-frame-slider"
+           min="0" max="{{ (panel.n_frames - 1) if panel else 0 }}" value="0" step="1">
+    <div class="tr-mono tr-frame-hint">← → step · shift±10 · n/p flagged · space play</div>
+  </section>
+
+  <section class="tr-panel tr-panel-traj">
+    <div class="tr-panel-title">trajectory · 3D · drag to rotate</div>
+    <div id="tr-traj" class="tr-plot"></div>
+  </section>
+
+  <section class="tr-panel tr-panel-metrics">
+    <div class="tr-panel-title">metrics</div>
+    {% if session.quality %}
+    {% set m = session.quality.metrics %}
+    <dl class="tr-metrics">
+      <dt>pose jump max</dt><dd class="tr-mono {{ 'tr-bad' if m.pose_jump_max_mm >= 50 else 'tr-warn' if m.pose_jump_max_mm >= 20 else 'tr-good' }}">{{ "%.1f"|format(m.pose_jump_max_mm) }} <span class="tr-unit">mm</span></dd>
+      <dt>jumps &gt; 20mm</dt><dd class="tr-mono {{ 'tr-warn' if m.pose_jump_count_20mm else 'tr-good' }}">{{ m.pose_jump_count_20mm }}</dd>
+      <dt>velocity p95</dt><dd class="tr-mono {{ 'tr-bad' if m.pose_vel_p95_mps >= 1.2 else 'tr-warn' if m.pose_vel_p95_mps >= 0.6 else 'tr-good' }}">{{ "%.2f"|format(m.pose_vel_p95_mps) }} <span class="tr-unit">m/s</span></dd>
+      <dt>accel p95</dt><dd class="tr-mono">{{ "%.1f"|format(m.pose_accel_p95) }} <span class="tr-unit">m/s²</span></dd>
+      <dt>quat jump max</dt><dd class="tr-mono {{ 'tr-warn' if m.quat_angle_jump_max_deg >= 10 else 'tr-good' }}">{{ "%.1f"|format(m.quat_angle_jump_max_deg) }}°</dd>
+      <dt>reloc suspects</dt><dd class="tr-mono {{ 'tr-bad' if m.relocalization_suspects >= 2 else 'tr-warn' if m.relocalization_suspects >= 1 else 'tr-good' }}">{{ m.relocalization_suspects }}</dd>
+      <dt>lost ratio</dt><dd class="tr-mono {{ 'tr-warn' if m.lost_ratio >= 0.05 else 'tr-good' }}">{{ "%.1f"|format(m.lost_ratio*100) }}%</dd>
+      <dt>lost run max</dt><dd class="tr-mono {{ 'tr-warn' if m.lost_run_max >= 5 else 'tr-good' }}">{{ m.lost_run_max }}</dd>
+      <dt>coherence</dt><dd class="tr-mono">{{ "%.2f"|format(m.proprio_pose_coherence) }}</dd>
+      <dt>keyframes</dt><dd class="tr-mono">{{ m.n_keyframes }} / {{ m.n_frames }}</dd>
+    </dl>
+    {% else %}
+    <div class="tr-empty">not scored — run <code class="tr-mono">python -m glove.quality backfill</code></div>
+    {% endif %}
+  </section>
+
+  <section class="tr-panel tr-panel-jumps">
+    <div class="tr-panel-title">Δpose per frame (mm) · red bars &gt; 20mm</div>
+    <div id="tr-jumps" class="tr-plot"></div>
+  </section>
+
+  <section class="tr-panel tr-panel-proprio">
+    <div class="tr-panel-title">proprio · hall angles + Bz + ToF</div>
+    <div id="tr-proprio" class="tr-plot"></div>
+  </section>
+
+</div>
+
+<footer class="tr-footer">
+  <form class="tr-actions" method="post" action="/review/{{ session.session_id }}/decision" id="tr-action-form">
+    <input type="hidden" name="queue" value="{{ queue }}">
+    <input type="hidden" name="task" value="{{ task or '' }}">
+    <input type="hidden" name="notes" id="tr-notes-input" value="{{ (session.review or {}).get('notes', '') }}">
+    <button type="submit" name="decision" value="approve" class="tr-btn tr-btn-approve" data-key="a">approve <span class="tr-key">a</span></button>
+    <button type="submit" name="decision" value="reject" class="tr-btn tr-btn-reject" data-key="r">reject <span class="tr-key">r</span></button>
+    <button type="submit" name="decision" value="force_include" class="tr-btn tr-btn-force" data-key="f">force include <span class="tr-key">f</span></button>
+    {% if session.decision %}
+    <button type="submit" name="decision" value="clear" class="tr-btn tr-btn-clear" data-key="u">clear <span class="tr-key">u</span></button>
+    {% endif %}
+  </form>
+  <div class="tr-nav">
+    {% if prev_id %}<a href="/review/{{ prev_id }}?queue={{ queue }}{% if task %}&task={{ task }}{% endif %}" class="tr-btn tr-btn-nav" data-key="prev">← prev <span class="tr-key">[</span></a>{% endif %}
+    <button type="button" class="tr-btn tr-btn-nav" data-key="s" onclick="document.getElementById('tr-next-link')?.click()">skip <span class="tr-key">s</span></button>
+    {% if next_id %}<a href="/review/{{ next_id }}?queue={{ queue }}{% if task %}&task={{ task }}{% endif %}" class="tr-btn tr-btn-nav" id="tr-next-link" data-key="next">next → <span class="tr-key">]</span></a>{% endif %}
+  </div>
+</footer>
+
+</div> <!-- /.review-scope -->
+
+<script>
+  window.REVIEW_PANEL = {{ panel|tojson if panel else 'null' }};
+  window.SESSION_ID = {{ session.session_id|tojson }};
+</script>
+<script src="{{ asset('review.js') }}"></script>
+{% endblock %}

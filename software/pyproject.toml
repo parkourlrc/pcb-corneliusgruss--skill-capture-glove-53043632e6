@@ -1,0 +1,59 @@
+[project]
+name = "glove"
+version = "0.1.0"
+description = "Skill-capture glove: capture, SLAM alignment, and ACT policy training."
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "torch",
+    "torchvision",
+    "pillow",
+    "tqdm",
+    "pyarrow",
+    "pandas",
+    "av",
+    "matplotlib",
+    "opencv-python",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+# Training (ACT policy + experiment tracking)
+train = [
+    "diffusers>=0.27",
+    "omegaconf>=2.3",
+    "wandb",
+]
+# Capture (USB serial reads from the DAQ board)
+daq = ["pyserial"]
+# Browse-only review dashboard
+dashboard = [
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+    "python-multipart",
+    "pydantic>=2.0",
+]
+# Full dev install
+all = ["glove[train,daq,dashboard]"]
+
+[project.scripts]
+glove-capture   = "glove.capture.__main__:main"
+glove-process   = "glove.process.__main__:main"
+glove-dashboard = "glove.dashboard.app:main"
+glove-policy    = "glove.policy.__main__:main"
+glove-quality   = "glove.quality.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["glove*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: end-to-end pipeline tests (deselect with '-m \"not slow\"')",
+]
+addopts = "-m 'not slow'"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

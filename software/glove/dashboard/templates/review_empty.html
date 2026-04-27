@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Review · empty{% endblock %}
+
+{% block content %}
+<div class="review-scope">
+  <header class="tr-header">
+    <div class="tr-header-left">
+      <div class="tr-breadcrumb">
+        <span class="tr-kbd-crumb">review</span>
+        <span class="tr-crumb-sep">/</span>
+        <span class="tr-queue-name">{{ queue }}</span>
+      </div>
+      <h1 class="tr-session-id">queue is empty</h1>
+      <div class="tr-session-meta">nothing left to review in <span class="tr-mono">{{ queue }}</span>{% if task %} for task <span class="tr-mono">{{ task }}</span>{% endif %}.</div>
+    </div>
+    <div class="tr-header-right">
+      <div class="tr-summary">
+        <span class="tr-summary-item"><span class="tr-dot tr-dot-pass"></span>{{ counts.auto_pass }}</span>
+        <span class="tr-summary-item"><span class="tr-dot tr-dot-warn"></span>{{ counts.pending_review }}</span>
+        <span class="tr-summary-item"><span class="tr-dot tr-dot-fail"></span>{{ counts.auto_fail }}</span>
+        <span class="tr-summary-item tr-summary-total">{{ counts.included }} / {{ counts.total }} in manifest</span>
+      </div>
+      <div class="tr-queue-picker">
+        <a href="/review?queue=needs_review" class="tr-pill {% if queue == 'needs_review' %}tr-pill-active{% endif %}">needs review</a>
+        <a href="/review?queue=auto_fail" class="tr-pill {% if queue == 'auto_fail' %}tr-pill-active{% endif %}">auto fail</a>
+        <a href="/review?queue=auto_pass" class="tr-pill {% if queue == 'auto_pass' %}tr-pill-active{% endif %}">auto pass</a>
+        <a href="/review?queue=decided" class="tr-pill {% if queue == 'decided' %}tr-pill-active{% endif %}">decided</a>
+        <a href="/review?queue=all" class="tr-pill {% if queue == 'all' %}tr-pill-active{% endif %}">all</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="tr-empty-state">
+    <p>Nothing to review in this queue.</p>
+    <p class="tr-mono tr-empty-hint">pick another queue above, or run <code>python -m glove.quality backfill</code> if sessions look unscored.</p>
+  </section>
+</div>
+{% endblock %}

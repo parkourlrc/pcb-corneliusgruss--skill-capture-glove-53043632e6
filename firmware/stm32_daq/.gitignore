@@ -1,0 +1,9 @@
+build/
+lib/STM32CubeG4/
+lib/tinyusb/
+.DS_Store
+*.o
+*.elf
+*.bin
+*.hex
+*.map

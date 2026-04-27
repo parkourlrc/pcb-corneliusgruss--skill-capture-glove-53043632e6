@@ -1,0 +1,5 @@
+target_type: 'aprilgrid'
+tagCols: 6
+tagRows: 6
+tagSize: 0.025796875     # Measured black square edge for the single physical target used in this session
+tagSpacing: 0.3          # gap = 30% of tag size

@@ -1,0 +1,55 @@
+# glove ACT training reference config
+#
+# The active training entry point is:
+#   python -m glove.policy train --task mug_coaster --run-name act_mug_coaster_v4 ...
+#
+# This file mirrors the current 23D observation / 21D action ACT stack. It is
+# intentionally human-readable reference material; the CLI flags are still the
+# source of truth for SCC jobs.
+
+run:
+  name: act_mug_coaster_v4
+  checkpoints_root: checkpoints
+  seed: 42
+
+dataset:
+  sessions_root: data/sessions
+  task: mug_coaster
+  val_fraction: 0.15
+  val_seed: 42
+  exclude_file: null
+
+model:
+  obs_dim: 23              # rel_pos(3) + rot6d(6) + Hall raw(12) + ToF(2)
+  action_dim: 21           # rel_pos(3) + rot6d(6) + Hall raw(12)
+  image_size: 224
+  obs_horizon: 2
+  action_horizon: 300      # 5 s at 60 fps
+  action_pose_mode: relative
+  latent_dim: 32
+  kl_weight: 50.0          # v3/v4 setting to fight posterior collapse
+  hidden_dim: 256
+  nhead: 8
+  num_encoder_layers: 4
+  num_decoder_layers: 7
+  feedforward_dim: 2048
+  dropout: 0.1
+  freeze_backbone: true
+
+optimizer:
+  batch_size: 16
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  num_epochs: 150
+  grad_clip: 1.0
+
+logging:
+  val_every: 2
+  save_every: 1
+  wandb: true
+  wandb_project: glove-act
+  wandb_entity: null
+
+augmentation:
+  enabled: true
+  static_mask: null

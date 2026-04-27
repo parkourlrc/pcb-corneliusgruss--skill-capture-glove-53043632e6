@@ -1,0 +1,36 @@
+# Smoke test config — validates full pipeline in <2 min on CPU
+# Usage: python -m glove.scripts.smoke_test
+
+policy:
+  obs_dim: 15
+  image_size: 64          # tiny images (224 → 64)
+  action_dim: 13
+  action_repr: "relative_6d"
+  action_horizon: 4       # short horizon (16 → 4)
+  obs_horizon: 2
+  num_diffusion_steps: 10  # fast sampling (100 → 10)
+  beta_schedule: "squaredcos_cap_v2"
+  hidden_dim: 32           # tiny network (256 → 32)
+  num_layers: 2            # fewer layers (4 → 2)
+  batch_size: 4
+  learning_rate: 1.0e-3    # higher LR for fast convergence
+  num_epochs: 3
+  freeze_backbone: true
+
+data:
+  random_crop: false
+  color_jitter: false
+
+training:
+  seed: 42
+  num_workers: 0           # no multiprocessing for CI
+  gradient_clip: 1.0
+  ema_decay: 0.995
+  checkpoint_every: 5
+  eval_every: 1
+  early_stopping_patience: 0
+
+logging:
+  wandb:
+    enabled: false
+  tensorboard: false

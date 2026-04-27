@@ -1,0 +1,74 @@
+{
+  "description": "Glove V3 Master CAD Intent. This file dictates pure geometric design decisions BEFORE physical calibration. Edit this to drive Fusion 360. We apply axes in Tait-Bryan Z-Y-X order",
+  "imu": {
+    "parent_pos": "mtcp",
+    "parent_rot": "mtcp",
+    "relative_translation_mm": [
+      6.826,
+      -52.365,
+      14.165
+    ],
+    "relative_rotation_rpy_deg": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "cam0": {
+    "parent_pos": "mtcp",
+    "parent_rot": "mtcp",
+    "relative_translation_mm": [
+      30.0,
+      29.0,
+      75.0
+    ],
+    "relative_rotation_rpy_deg": [
+      0.0,
+      0.0,
+      -25.0
+    ]
+  },
+  "cam1": {
+    "parent_pos": "mtcp",
+    "parent_rot": "mtcp",
+    "relative_translation_mm": [
+      35.0,
+      0.0,
+      -79.5
+    ],
+    "relative_rotation_rpy_deg": [
+      0.0,
+      45.0,
+      0.0
+    ]
+  },
+  "tof_top": {
+    "parent_pos": "mtcp",
+    "parent_rot": "cam0",
+    "relative_translation_mm": [
+      30.0,
+      29.0,
+      58.0
+    ],
+    "target_intersection_depth_mm": 180.0,
+    "relative_rotation_rpy_deg": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "tof_bot": {
+    "parent_pos": "cam1",
+    "parent_rot": "cam1",
+    "relative_translation_mm": [
+      20.0,
+      0.0,
+      -2.0
+    ],
+    "relative_rotation_rpy_deg": [
+      0.0,
+      0.0,
+      -25.0
+    ]
+  }
+}

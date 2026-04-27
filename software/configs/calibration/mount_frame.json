@@ -1,0 +1,63 @@
+{
+  "description": "Sensor-to-mount transforms for the V2 OV9782 stereo build (reference). Rotations are intrinsic Euler angles in the mount frame. Positions are lens/sensor center in mount frame. The code computes 4x4 T_sensor_to_mount matrices from these values.",
+  "mount_frame": {
+    "origin": "Index MCP joint axis center",
+    "X": "+dorsal (back of hand)",
+    "Y": "+forward (toward fingertips)",
+    "Z": "+up (gravity-opposing)",
+    "convention": "right-hand, X cross Y = Z"
+  },
+  "camera_convention": {
+    "optical_axis": "+Y (forward in mount frame at identity)",
+    "note": "OpenCV camera frame: +Z=optical, +X=right in image, +Y=down. The code applies a base rotation from OpenCV frame to body frame based on image_right and image_down fields."
+  },
+  "camera_top": {
+    "name": "OV9782 #1 (index side)",
+    "euler_deg": [-20, -5],
+    "euler_seq": "ZX",
+    "euler_description": "-20deg yaw around Z (from +Y toward +X), then -5deg pitch around body X (down). Measured in Fusion 360 2026-02-28.",
+    "position_mm": [-40.0, 29.1, 73.0],
+    "image_right": "+X",
+    "image_down": "-Z",
+    "image_orientation_note": "Verified 2026-03-01: optical flow on session_084235 shows +X_mount motion -> scene moves left in image (du=-812px), confirming image_right = +X"
+  },
+  "camera_bot": {
+    "name": "OV9782 #2 (3-finger side)",
+    "euler_deg": [0, -45],
+    "euler_seq": "ZX",
+    "euler_description": "No yaw, -45deg pitch around X (pointing down into workspace)",
+    "position_mm": [-8.7, 28.2, -80.1],
+    "image_right": "+X",
+    "image_down": "-Z",
+    "image_orientation_note": "Verified 2026-03-01: optical flow on session_084235 confirms same orientation as cam_top (du=-1554px)"
+  },
+  "tof_top": {
+    "name": "VL53L1X #1 (index side, forward+up)",
+    "euler_deg": [-20, 15],
+    "euler_seq": "ZX",
+    "euler_description": "-20deg yaw around Z (same as cam_top), then +15deg pitch around body X (up, opposite of cam_top)",
+    "position_mm": [-40.0, 29.0, 57.0],
+    "viewing_direction_note": "Same yaw as camera_top but pitched UP instead of down"
+  },
+  "tof_bot": {
+    "name": "VL53L1X #2 (3-finger side)",
+    "euler_deg": [-45, -15],
+    "euler_seq": "XZ",
+    "euler_description": "-45deg pitch around X (down, same as cam_bot), then -15deg yaw around body Z",
+    "position_mm": [22.0, 8.5, -71.5]
+  },
+  "imu": {
+    "name": "ICM-20948 (MCU-20948 breakout)",
+    "euler_deg": "N/A",
+    "euler_seq": "N/A",
+    "euler_description": "Use T_imu_to_mount matrix below.",
+    "position_mm": "derived from Kalibr",
+    "note": "T_imu_to_mount derived from Kalibr cam0 T_cam_imu (ICM-20948) + CAD T_cam0_to_mount (2026-03-17). Axis mapping: X_imu->+Y_mount, Y_imu->+Z_mount, Z_imu->+X_mount."
+  },
+  "T_imu_to_mount": [
+    [-0.071837, -0.052799,  0.996018, -0.037247],
+    [ 0.994545,  0.071930,  0.075544,  0.028008],
+    [-0.075632,  0.996011,  0.047344,  0.085709],
+    [ 0.000000,  0.000000,  0.000000,  1.000000]
+  ]
+}

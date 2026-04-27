@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Review · {{ sessions|length }} of {{ counts.total }}{% endblock %}
+
+{% block content %}
+<div class="review-scope">
+
+<header class="tr-header">
+  <div class="tr-header-left">
+    <div class="tr-breadcrumb">
+      <span class="tr-kbd-crumb">review</span>
+      <span class="tr-crumb-sep">/</span>
+      <span class="tr-queue-name">{{ queue }}</span>
+      {% if task %}<span class="tr-crumb-sep">/</span><span class="tr-queue-name">{{ task }}</span>{% endif %}
+    </div>
+    <h1 class="tr-session-id">{{ sessions|length }} episode{% if sessions|length != 1 %}s{% endif %}
+      <span class="tr-session-id-dim">· {{ counts.total }} total</span>
+    </h1>
+    <div class="tr-session-meta">
+      <span><span class="tr-dot tr-dot-pass"></span> {{ counts.auto_pass }} pass</span>
+      <span class="tr-meta-sep">·</span>
+      <span><span class="tr-dot tr-dot-warn"></span> {{ counts.pending_review }} pending</span>
+      <span class="tr-meta-sep">·</span>
+      <span><span class="tr-dot tr-dot-fail"></span> {{ counts.auto_fail }} fail</span>
+      <span class="tr-meta-sep">·</span>
+      <span class="tr-mono">{{ counts.reviewed }} reviewed</span>
+      <span class="tr-meta-sep">·</span>
+      <span class="tr-mono">{{ counts.included }} in manifest</span>
+    </div>
+  </div>
+  <div class="tr-header-right">
+    <form class="tr-filter-form" method="get" action="/review">
+      <input type="hidden" name="queue" value="{{ queue }}">
+      {% if task %}<input type="hidden" name="task" value="{{ task }}">{% endif %}
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="order" value="{{ order }}">
+      <input class="tr-search" type="search" name="q" value="{{ q }}" placeholder="search id or task…" autocomplete="off">
+    </form>
+    <div class="tr-queue-picker">
+      <a href="/review?queue=needs_review{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'needs_review' %}tr-pill-active{% endif %}">needs review</a>
+      <a href="/review?queue=auto_fail{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'auto_fail' %}tr-pill-active{% endif %}">auto fail</a>
+      <a href="/review?queue=auto_pass{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'auto_pass' %}tr-pill-active{% endif %}">auto pass</a>
+      <a href="/review?queue=decided{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'decided' %}tr-pill-active{% endif %}">decided</a>
+      <a href="/review?queue=all{% if task %}&task={{ task }}{% endif %}" class="tr-pill {% if queue == 'all' %}tr-pill-active{% endif %}">all</a>
+    </div>
+    {% if counts.tasks %}
+    <div class="tr-queue-picker">
+      <a href="/review?queue={{ queue }}" class="tr-pill {% if not task %}tr-pill-active{% endif %}">all tasks</a>
+      {% for t in counts.tasks %}
+      <a href="/review?queue={{ queue }}&task={{ t }}" class="tr-pill {% if task == t %}tr-pill-active{% endif %}">{{ t }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</header>
+
+{% if sessions %}
+{% macro sort_header(label, key) %}
+  {% set is_active = sort == key %}
+  {% set next_order = 'desc' if (is_active and order == 'asc') else 'asc' %}
+  <a class="tr-th-sort {% if is_active %}tr-th-sort-active{% endif %}"
+     href="/review?queue={{ queue }}{% if task %}&task={{ task }}{% endif %}&sort={{ key }}&order={{ next_order }}{% if q %}&q={{ q }}{% endif %}">{{ label
+     }}{% if is_active %}<span class="tr-th-arrow">{{ '↓' if order == 'desc' else '↑' }}</span>{% endif %}</a>
+{% endmacro %}
+
+<table class="tr-table" id="tr-review-table">
+  <thead>
+    <tr>
+      <th class="tr-th-id">{{ sort_header('episode', 'session_id') }}</th>
+      <th>{{ sort_header('task', 'task') }}</th>
+      <th class="tr-num">{{ sort_header('dur', 'duration') }}</th>
+      <th>{{ sort_header('verdict', 'verdict') }}</th>
+      <th class="tr-num">{{ sort_header('jump max', 'jump_max') }}</th>
+      <th class="tr-num">reloc</th>
+      <th>decision</th>
+      <th class="tr-center">in mfst</th>
+      <th class="tr-right">{{ sort_header('created', 'created') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sessions %}
+    {% set m = (s.quality or {}).get('metrics', {}) %}
+    <tr class="tr-tr" data-href="/review/{{ s.session_id }}?queue={{ queue }}{% if task %}&task={{ task }}{% endif %}">
+      <td class="tr-td-id tr-mono"><a href="/review/{{ s.session_id }}?queue={{ queue }}{% if task %}&task={{ task }}{% endif %}">{{ s.session_id }}</a></td>
+      <td>{{ s.task or '—' }}</td>
+      <td class="tr-num tr-mono">{{ "%.1f"|format(s.duration_s) }}s</td>
+      <td><span class="tr-tag tr-tag-{{ s.verdict }}">{{ s.verdict }}</span></td>
+      <td class="tr-num tr-mono {% if m.get('pose_jump_max_mm', 0) >= 50 %}tr-bad{% elif m.get('pose_jump_max_mm', 0) >= 20 %}tr-warn{% elif s.quality %}tr-good{% endif %}">
+        {% if s.quality %}{{ "%.1f"|format(m.get('pose_jump_max_mm', 0)) }}mm{% else %}—{% endif %}
+      </td>
+      <td class="tr-num tr-mono {% if m.get('relocalization_suspects', 0) >= 2 %}tr-bad{% elif m.get('relocalization_suspects', 0) >= 1 %}tr-warn{% endif %}">
+        {% if s.quality %}{{ m.get('relocalization_suspects', 0) }}{% else %}—{% endif %}
+      </td>
+      <td>{% if s.decision %}<span class="tr-tag tr-tag-decision-{{ s.decision }}">{{ s.decision }}</span>{% endif %}</td>
+      <td class="tr-center">{% if s.included_in_manifest %}<span class="tr-check">✓</span>{% else %}<span class="tr-x">·</span>{% endif %}</td>
+      <td class="tr-right tr-mono tr-dim">{{ s.created_at[:10] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<section class="tr-empty-state">
+  <p>No episodes match these filters.</p>
+  <p class="tr-mono tr-empty-hint">try <a href="/review?queue=all">queue=all</a>, or clear the search.</p>
+</section>
+{% endif %}
+
+</div>
+
+<script>
+  // j/k to navigate rows, Enter to open the highlighted row.
+  (function () {
+    const rows = Array.from(document.querySelectorAll('.tr-tr'));
+    if (!rows.length) return;
+    let idx = -1;
+    function highlight(i) {
+      rows.forEach(r => r.classList.remove('tr-tr-hi'));
+      if (i < 0 || i >= rows.length) return;
+      rows[i].classList.add('tr-tr-hi');
+      rows[i].scrollIntoView({ block: 'nearest' });
+    }
+    rows.forEach((r, i) => {
+      r.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A') return;
+        window.location.href = r.dataset.href;
+      });
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.target.matches('input, textarea, select')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === 'j' || k === 'arrowdown') { idx = Math.min(idx + 1, rows.length - 1); highlight(idx); e.preventDefault(); }
+      else if (k === 'k' || k === 'arrowup') { idx = Math.max(idx - 1, 0); highlight(idx); e.preventDefault(); }
+      else if (k === 'enter' && idx >= 0) { window.location.href = rows[idx].dataset.href; e.preventDefault(); }
+      else if (k === '/') {
+        const s = document.querySelector('.tr-search');
+        if (s) { s.focus(); s.select(); e.preventDefault(); }
+      }
+    });
+  })();
+</script>
+{% endblock %}

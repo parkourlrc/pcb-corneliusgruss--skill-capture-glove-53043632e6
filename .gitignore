@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data
+data/
+*.parquet
+*.mp4
+*.MP4
+*.JPG
+*.HEIC
+
+# But keep documentation and figure-rendering inputs
+!docs/images/*.png
+!docs/images/*.jpg
+!docs/videos/*.mp4
+!hardware/**/*.pdf
+!paper/*.pdf
+
+# KiCad auto-generated backups + local save-history (Project History feature)
+hardware/**/*-backups/
+hardware/**/*.bak
+hardware/**/.history/
+*.kicad_pcb-bak
+fp-info-cache/
+
+# OS
+Thumbs.db
